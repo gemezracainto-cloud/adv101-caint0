@@ -1,69 +1,409 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import NoteItem from "./component/noteItem";
+
+export type Note = {
+  id: number;
+  title: string;
+  description: string;
+  createdAt: string;
+};
 
 export default function Home() {
+  const [notes, setNotes] = useState<Note[]>([]);
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const [duplicate, setDuplicate] = useState(false);
+
+  // ==========================================
+  // BONUS: USE EFFECT
+  // CHECK IF NOTE ALREADY EXISTS
+  // ==========================================
+  useEffect(() => {
+    if (title.trim() === "" || editingId !== null) {
+      setDuplicate(false);
+      return;
+    }
+
+    const exists = notes.some(
+      (note) =>
+        note.title.toLowerCase().trim() ===
+        title.toLowerCase().trim()
+    );
+
+    setDuplicate(exists);
+  }, [title, notes, editingId]);
+
+  // ==========================================
+  // ADD / UPDATE NOTE
+  // ==========================================
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!title.trim() || !description.trim()) {
+      alert("Please enter a title and description.");
+      return;
+    }
+
+    // UPDATE
+    if (editingId !== null) {
+      setNotes(
+        notes.map((note) =>
+          note.id === editingId
+            ? {
+                ...note,
+                title: title.trim(),
+                description: description.trim(),
+              }
+            : note
+        )
+      );
+
+      setEditingId(null);
+      setTitle("");
+      setDescription("");
+
+      return;
+    }
+
+    // CHECK DUPLICATE
+    const exists = notes.some(
+      (note) =>
+        note.title.toLowerCase().trim() ===
+        title.toLowerCase().trim()
+    );
+
+    if (exists) {
+      alert("A note with this title already exists.");
+      return;
+    }
+
+    // CREATE NEW NOTE
+    const newNote: Note = {
+      id: Date.now(),
+      title: title.trim(),
+      description: description.trim(),
+      createdAt: new Date().toLocaleString(),
+    };
+
+    setNotes((currentNotes) => [
+      newNote,
+      ...currentNotes,
+    ]);
+
+    setTitle("");
+    setDescription("");
+  };
+
+  // ==========================================
+  // DELETE
+  // ==========================================
+  const handleDelete = (id: number) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this note?"
+    );
+
+    if (!confirmed) return;
+
+    setNotes((currentNotes) =>
+      currentNotes.filter((note) => note.id !== id)
+    );
+  };
+
+  // ==========================================
+  // EDIT
+  // ==========================================
+  const handleEdit = (note: Note) => {
+    setTitle(note.title);
+    setDescription(note.description);
+    setEditingId(note.id);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  // ==========================================
+  // CANCEL EDIT
+  // ==========================================
+  const handleCancel = () => {
+    setTitle("");
+    setDescription("");
+    setEditingId(null);
+    setDuplicate(false);
+  };
+
+  // ==========================================
+  // SCROLL TO FORM
+  // ==========================================
+  const scrollToForm = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+
+    setTimeout(() => {
+      document.getElementById("note-title")?.focus();
+    }, 500);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="app">
+
+      {/* ======================================
+          NAVBAR
+      ====================================== */}
+      <nav className="navbar">
+
+        <div className="brand">
+          <div className="brand-icon">
+            ✎
+          </div>
+
+          <span>PERSONAL / NOTES</span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="nav-links">
+          <button className="nav-link active">
+            ▣ &nbsp; Notes
+          </button>
+
+          <button className="nav-link">
+            ▤ &nbsp; Archive
+          </button>
+
+          <button className="nav-link">
+            ⚙ &nbsp; Settings
+          </button>
         </div>
-      </main>
-    </div>
+
+      </nav>
+
+      {/* ======================================
+          MAIN
+      ====================================== */}
+      <div className="container">
+
+        {/* ====================================
+            HERO + FORM
+        ==================================== */}
+        <section className="top-grid">
+
+          {/* HERO */}
+          <div className="hero">
+
+            <div className="hero-content">
+
+              <div className="eyebrow">
+                WELCOME BACK
+                <span></span>
+              </div>
+
+              <h1>
+                Your notes.
+                <br />
+                <strong>Organized.</strong>
+              </h1>
+
+              <p>
+                Capture your ideas, tasks, and thoughts
+                in one place.
+                <br />
+                Keep track of what matters most.
+              </p>
+
+              <button
+                className="hero-button"
+                onClick={scrollToForm}
+              >
+                <span>＋</span>
+                Add Note
+              </button>
+
+            </div>
+
+            <div className="hero-lines"></div>
+
+          </div>
+
+          {/* FORM */}
+          <div className="form-card">
+
+            <div className="form-heading">
+
+              <div className="form-icon">
+                ▣
+              </div>
+
+              <div>
+                <h2>
+                  {editingId !== null
+                    ? "Update Note"
+                    : "Create Note"}
+                </h2>
+
+                <p>
+                  {editingId !== null
+                    ? "Update your existing note."
+                    : "Add a new note to your collection."}
+                </p>
+              </div>
+
+            </div>
+
+            <form onSubmit={handleSubmit}>
+
+              <label htmlFor="note-title">
+                Title
+              </label>
+
+              <input
+                id="note-title"
+                type="text"
+                placeholder="Enter note title..."
+                value={title}
+                onChange={(e) =>
+                  setTitle(e.target.value)
+                }
+              />
+
+              {duplicate && (
+                <div className="duplicate-warning">
+                  ⚠ This note already exists.
+                </div>
+              )}
+
+              <label htmlFor="note-description">
+                Description
+              </label>
+
+              <textarea
+                id="note-description"
+                placeholder="Write your note here..."
+                value={description}
+                onChange={(e) =>
+                  setDescription(e.target.value)
+                }
+              />
+
+              <div className="form-actions">
+
+                {editingId !== null && (
+                  <button
+                    type="button"
+                    className="cancel-button"
+                    onClick={handleCancel}
+                  >
+                    Cancel
+                  </button>
+                )}
+
+                <button
+                  type="submit"
+                  className="submit-button"
+                >
+                  ＋{" "}
+                  {editingId !== null
+                    ? "Update Note"
+                    : "Add Note"}
+                </button>
+
+              </div>
+
+            </form>
+
+          </div>
+
+        </section>
+
+        {/* ====================================
+            NOTES
+        ==================================== */}
+        <section className="notes-container">
+
+          <div className="notes-heading">
+
+            <div className="notes-title">
+
+              <div className="notes-icon">
+                ▤
+              </div>
+
+              <div>
+                <h2>My Notes</h2>
+                <p>
+                  Here are all your saved notes.
+                </p>
+              </div>
+
+            </div>
+
+            <div className="notes-count">
+              ▣ &nbsp; {notes.length}{" "}
+              {notes.length === 1 ? "Note" : "Notes"}
+            </div>
+
+          </div>
+
+          {notes.length === 0 ? (
+
+            <div className="empty-state">
+
+              <div className="empty-icon">
+                ▤
+              </div>
+
+              <h3>No notes yet</h3>
+
+              <p>
+                Create your first note using the
+                form above.
+              </p>
+
+            </div>
+
+          ) : (
+
+            <div className="notes-grid">
+
+              {notes.map((note) => (
+                <NoteItem
+                  key={note.id}
+                  note={note}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+
+            </div>
+
+          )}
+
+        </section>
+
+      </div>
+
+      {/* ======================================
+          FOOTER
+      ====================================== */}
+      <footer className="footer">
+
+        <span></span>
+
+        <p>
+          Built with Next.js
+        </p>
+
+        <span></span>
+
+      </footer>
+
+    </main>
   );
 }
